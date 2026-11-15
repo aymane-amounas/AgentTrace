@@ -163,7 +163,9 @@ Rust (SDK + collector), SQLite, axum, React + Vite + TypeScript, Docker.
 
 ## License
 
-MIT - see [LICENSE](LICENSE).
+Aymane Amounas Noncommercial Attribution License 1.0. Free for personal,
+educational, research and hobby use; commercial use needs a separate written
+agreement. See [LICENSE](LICENSE).
 
 ---
 <sub>Built by [Aymane](https://github.com/aymane-amounas)</sub>
