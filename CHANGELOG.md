@@ -28,4 +28,14 @@ First release.
 - **Deployment** — Dockerfile + Compose, CI (fmt, clippy, tests, viewer build,
   Docker build, dependency audit), and docs.
 
+### Security
+- Redaction now masks hyphenated OpenAI key formats (`sk-proj-…`, `sk-svcacct-…`)
+  and matches sensitive key-name substrings (e.g. `db_password`, `openai_api_key`),
+  without over-redacting benign fields like `input_tokens`. Found and fixed during
+  release-hardening with regression tests at the SDK and HTTP boundaries.
+
+### Fixed
+- Docker base image bumped to `rust:1.90` (MSRV 1.85): a transitive dependency
+  requires Rust edition 2024, which the previous `rust:1.83` base could not build.
+
 [0.1.0]: https://github.com/aymane-amounas/agenttrace/releases/tag/v0.1.0

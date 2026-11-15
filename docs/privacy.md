@@ -12,9 +12,12 @@ Two layers run together (`crates/agenttrace/src/redact.rs`):
    `password`, `token`, `access_token`, `refresh_token`, `private_key`,
    `cookie`, `credentials`, … — has its value replaced with `[REDACTED]`.
 2. **Value rules.** Every remaining string is scanned for secret-shaped
-   substrings and masked: bearer tokens, OpenAI/Anthropic `sk-…` keys, AWS access
-   keys (`AKIA…`), Google API keys (`AIza…`), GitHub (`ghp_…`), Slack (`xox…`),
-   and JWTs.
+   substrings and masked: bearer tokens, OpenAI/Anthropic `sk-…` keys (including
+   hyphenated `sk-proj-…` / `sk-svcacct-…`), AWS access keys (`AKIA…`), Google API
+   keys (`AIza…`), GitHub (`ghp_…`), Slack (`xox…`), and JWTs.
+
+Key matching also covers sensitive substrings (e.g. `db_password`,
+`openai_api_key`), chosen to avoid masking benign fields such as `input_tokens`.
 
 ## Raw payloads are off by default
 
@@ -49,6 +52,8 @@ client and asserts it never appears in storage
 - Redaction is pattern/heuristic based. A novel secret format or a secret placed
   in an unexpected, non-flagged field could slip through. Keep payload capture
   off for anything sensitive, and add custom rules for your own formats.
+- Redaction is applied at write time. Spans stored *before* a redaction-rule
+  change are not retroactively re-scrubbed; drop the database to purge them.
 - `estimated_cost` is an estimate from a static price table, not billing truth.
 - The collector has no authentication; it relies on loopback binding. Do not
   expose it publicly.

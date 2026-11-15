@@ -215,6 +215,7 @@ async fn secrets_never_reach_storage_via_api() {
         "status": "ok",
         "attributes": {
             "authorization": "Bearer sk-ant-aaaaaaaaaaaaaaaaaaaaaaaa",
+            "openai_key": "sk-proj-ABCDEFGHIJKLMNOPQRSTUVWXYZ012345",
             "prompt": "please do the thing",
             "note": "leaked AKIA1234567890ABCDEF in logs"
         }
@@ -250,6 +251,10 @@ async fn secrets_never_reach_storage_via_api() {
     assert!(
         !stored.contains("AKIA1234567890ABCDEF"),
         "AWS key leaked into storage"
+    );
+    assert!(
+        !stored.contains("sk-proj-ABCDEFGHIJKL"),
+        "OpenAI sk-proj key leaked into storage"
     );
     assert!(stored.contains("[REDACTED]"));
 }

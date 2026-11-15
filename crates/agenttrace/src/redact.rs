@@ -133,6 +133,36 @@ impl RedactionPolicy {
         }
     }
 
+    /// Whether an attribute key should have its value fully masked. Matches the
+    /// exact sensitive-key list, plus conservative substrings that are almost
+    /// never benign (chosen to avoid masking fields like `input_tokens` or
+    /// `token_count`).
+    fn is_sensitive_key(&self, lower_key: &str) -> bool {
+        if self.redacted_keys.iter().any(|rk| lower_key == rk) {
+            return true;
+        }
+        const INDICATORS: &[&str] = &[
+            "secret",
+            "password",
+            "passwd",
+            "api_key",
+            "apikey",
+            "api-key",
+            "access_key",
+            "private_key",
+            "authorization",
+            "credential",
+            "access_token",
+            "refresh_token",
+            "auth_token",
+        ];
+        INDICATORS.iter().any(|ind| lower_key.contains(ind))
+    }
+
+    fn is_dropped_payload_key(&self, lower_key: &str) -> bool {
+        !self.capture_payloads && self.payload_keys.iter().any(|pk| lower_key == pk)
+    }
+
     fn redact_map(
         &self,
         map: std::collections::BTreeMap<String, Value>,
@@ -140,9 +170,9 @@ impl RedactionPolicy {
         let mut out = std::collections::BTreeMap::new();
         for (k, v) in map {
             let lk = k.to_lowercase();
-            if self.redacted_keys.iter().any(|rk| &lk == rk) {
+            if self.is_sensitive_key(&lk) {
                 out.insert(k, Value::String(REDACTED.to_string()));
-            } else if !self.capture_payloads && self.payload_keys.iter().any(|pk| &lk == pk) {
+            } else if self.is_dropped_payload_key(&lk) {
                 out.insert(k, Value::String(OMITTED.to_string()));
             } else {
                 out.insert(k, self.redact_value(v));
@@ -161,10 +191,9 @@ impl RedactionPolicy {
                 let mut out = serde_json::Map::new();
                 for (k, val) in obj {
                     let lk = k.to_lowercase();
-                    if self.redacted_keys.iter().any(|rk| &lk == rk) {
+                    if self.is_sensitive_key(&lk) {
                         out.insert(k, Value::String(REDACTED.to_string()));
-                    } else if !self.capture_payloads && self.payload_keys.iter().any(|pk| &lk == pk)
-                    {
+                    } else if self.is_dropped_payload_key(&lk) {
                         out.insert(k, Value::String(OMITTED.to_string()));
                     } else {
                         out.insert(k, self.redact_value(val));
@@ -191,7 +220,7 @@ fn default_value_patterns() -> Vec<Regex> {
     let raw = [
         r"(?i)bearer\s+[A-Za-z0-9._\-]{8,}", // Authorization: Bearer ...
         r"sk-ant-[A-Za-z0-9\-_]{16,}",       // Anthropic keys
-        r"sk-[A-Za-z0-9]{20,}",              // OpenAI-style keys
+        r"sk-[A-Za-z0-9_\-]{16,}",           // OpenAI keys incl. sk-proj-/sk-svcacct-
         r"AKIA[0-9A-Z]{16}",                 // AWS access key id
         r"AIza[0-9A-Za-z\-_]{20,}",          // Google API key
         r"gh[pousr]_[A-Za-z0-9]{20,}",       // GitHub tokens
@@ -282,6 +311,55 @@ mod tests {
             "serialized span still has a secret: {json}"
         );
         assert!(!json.contains("AKIA1234567890ABCDEF"));
+    }
+
+    #[test]
+    fn masks_hyphenated_openai_project_keys() {
+        // Regression: `sk-proj-...` (and the unflagged key name `openai_key`)
+        // previously slipped through because the regex stopped at the hyphen.
+        let mut s = span_with_attrs(json!({
+            "openai_key": "sk-proj-ABCDEFGHIJKLMNOPQRSTUVWXYZ012345",
+            "svc": "sk-svcacct-ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        }));
+        RedactionPolicy::strict().redact_span(&mut s);
+        let json = serde_json::to_string(&s).unwrap();
+        assert!(
+            !json.contains("sk-proj-ABCDEFGHIJKL"),
+            "sk-proj key leaked: {json}"
+        );
+        assert!(
+            !json.contains("sk-svcacct-ABCDEFGHIJKL"),
+            "sk-svcacct key leaked: {json}"
+        );
+    }
+
+    #[test]
+    fn masks_sensitive_key_substrings() {
+        let mut s = span_with_attrs(json!({
+            "db_password": "hunter2",
+            "openai_api_key": "whatever",
+            "x_auth_token": "zzz"
+        }));
+        RedactionPolicy::strict().redact_span(&mut s);
+        assert_eq!(s.attributes["db_password"], json!(REDACTED));
+        assert_eq!(s.attributes["openai_api_key"], json!(REDACTED));
+        assert_eq!(s.attributes["x_auth_token"], json!(REDACTED));
+    }
+
+    #[test]
+    fn does_not_over_redact_token_counts() {
+        // Benign fields that contain "token" must survive (not caught by "token").
+        let mut s = span_with_attrs(json!({
+            "input_tokens": 1200,
+            "output_tokens": 340,
+            "token_count": 55,
+            "idempotency_key": "req-123"
+        }));
+        RedactionPolicy::strict().redact_span(&mut s);
+        assert_eq!(s.attributes["input_tokens"], json!(1200));
+        assert_eq!(s.attributes["output_tokens"], json!(340));
+        assert_eq!(s.attributes["token_count"], json!(55));
+        assert_eq!(s.attributes["idempotency_key"], json!("req-123"));
     }
 
     #[test]

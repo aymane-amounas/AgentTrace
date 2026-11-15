@@ -69,3 +69,24 @@ The adapter mechanism (the `tracing-layer` bridge) is implemented and tested.
 The exact annotation of Venus's internal spans lives in the Venus repository and
 is applied there; AgentTrace deliberately ships no fork of or patch to Venus. The
 sample agent demonstrates the full feature set independently.
+
+### Verified against real Venus code (2026-11-15)
+
+AgentTrace was run against **real `venus-agent` code** (its capability
+orchestrator: authorization → execution → audit) with no changes to either repo.
+A successful `workspace.summary` and a failing `workspace.file_read` produced a
+correct parent/child trace (run → two tool calls, one `error`).
+
+Two findings from inspecting Venus:
+
+- Venus currently emits **no `tracing` spans**, so the layer bridge alone captures
+  nothing until spans are added. Until then, wrap Venus operations with the
+  AgentTrace SDK directly (as the verification harness does).
+- Venus has **no retry logic**, so the `retry` span type has nothing to map there
+  yet.
+
+To get deep, automatic tracing, add `tracing::info_span!` annotations (with the
+`at.*` fields above) at Venus's model-call sites (`src/cli.rs`, `src/tui.rs`) and
+its capability runtime (`src/orchestrator.rs::run`). These are additive, need no
+new dependency (Venus already uses `tracing`), and leave default behavior
+unchanged — a good first PR, left for review rather than applied blindly.

@@ -45,21 +45,42 @@ browser.
 
 ## Tests
 
-`cargo test --workspace --all-features` → **36 passing**:
-- SDK unit: 24 · SDK doc tests: 3 · collector unit: 6 · collector HTTP
-  integration: 3.
+`cargo test --workspace --all-features` → **39 passing**:
+- SDK unit: 27 · SDK doc tests: 3 · collector unit: 6 · collector HTTP
+  integration: 3 (incl. redaction regression tests for `sk-proj` keys and
+  no-over-redaction of token counts).
 
 Plus `cargo fmt --check`, `cargo clippy -D warnings` (clean), and
 `npm run lint` / `npm run build` (clean).
 
-## Docker note (honesty)
+## M7 — Release-hardening results (2026-11-15)
 
-The `Dockerfile` and `docker-compose.yml` are written and `docker compose config`
-validates. The multi-stage image build was **not run locally** this session
-because the Docker daemon was not running on the build machine (only the Docker
-CLI was available). The image build is exercised by the `docker` CI job on every
-push. Treat the container path as "authored and CI-validated, not yet smoke-run
-locally" until a maintainer runs `docker compose up --build`.
+Validation performed after v0.1.0, treating the previous report as unverified.
+
+- **Repo audit** — 39 tests pass, clippy `-D warnings` clean, viewer lint+build
+  clean, remote tree verified (no build artifacts/DB/secrets committed).
+- **Docker** — image build initially **failed** (base image `rust:1.83` too old;
+  a transitive dep requires edition 2024). Fixed to `rust:1.90` and MSRV
+  corrected to 1.85. Image now builds (169 MB) and the full Compose deployment was
+  run and verified: health OK, viewer served, traces ingested, **persisted in
+  SQLite across a container restart** (named volume), and the port is published to
+  **127.0.0.1 only** (not public).
+- **Venus integration** — verified against **real `venus-agent` code** via a
+  harness (no changes to either repo): Venus's real capability orchestrator was
+  driven through a successful `workspace.summary` and a failing
+  `workspace.file_read`, producing a correct parent/child trace. Finding: Venus
+  currently emits **no `tracing` spans** and has **no retry logic**, so deep
+  per-model/tool tracing requires adding span annotations inside Venus (a
+  reviewable change, not shipped here). A live LLM run needs the user's API key.
+- **Security audit** — black-box injection against the running container found a
+  **real leak**: modern OpenAI `sk-proj-…` keys (and the unflagged key name
+  `openai_key`) slipped through because the regex stopped at the hyphen. **Fixed**
+  (`sk-[A-Za-z0-9_-]{16,}` + sensitive-key substring matching) with regression
+  tests at SDK and HTTP level; re-verified on the live container that `sk-proj`,
+  `sk-ant`, and `db_password` are masked while benign `input_tokens` is preserved.
+- **CI** — still **not active**: the `aymane-amounas` token lacks the `workflow`
+  OAuth scope, so the workflow stays in `.github/workflows-pending/`. Activation
+  requires `gh auth refresh -h github.com -s workflow` then moving the file.
 
 ## Not done / limitations
 
@@ -73,7 +94,9 @@ locally" until a maintainer runs `docker compose up --build`.
   shipped).
 - **Auth** — none; the collector relies on loopback binding.
 - **Redaction** — heuristic; novel secret formats in unflagged fields could slip
-  through. Keep payload capture off for sensitive data.
+  through (the M7 audit found and fixed one such case). Keep payload capture off
+  for sensitive data. Redaction is applied at write time, so spans stored *before*
+  a redaction-rule fix are not retroactively scrubbed.
 - **Cost** — `estimated_cost` is an estimate from a static table, not billing.
 
 ## Recommended next milestone

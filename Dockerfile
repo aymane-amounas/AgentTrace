@@ -9,7 +9,8 @@ COPY viewer/ ./
 RUN npm run build
 
 # ---- Stage 2: build the collector ----
-FROM rust:1.83-bookworm AS build
+# Rust >= 1.85 is required: a transitive dependency (hyper-util) uses edition 2024.
+FROM rust:1.90-bookworm AS build
 WORKDIR /src
 COPY Cargo.toml Cargo.lock* ./
 COPY crates/ crates/
