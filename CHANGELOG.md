@@ -37,5 +37,7 @@ First release.
 ### Fixed
 - Docker base image bumped to `rust:1.90` (MSRV 1.85): a transitive dependency
   requires Rust edition 2024, which the previous `rust:1.83` base could not build.
+- Bumped `rusqlite` 0.32 -> 0.43 to pull patched `libsqlite3-sys` >= 0.40,
+  resolving RUSTSEC-2026-0459 (medium). CI now runs `cargo audit` as a real gate.
 
 [0.1.0]: https://github.com/aymane-amounas/agenttrace/releases/tag/v0.1.0
