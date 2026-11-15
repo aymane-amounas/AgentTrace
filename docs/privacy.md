@@ -8,9 +8,9 @@ Traces are sensitive. AgentTrace treats redaction as a core feature, applied
 Two layers run together (`crates/agenttrace/src/redact.rs`):
 
 1. **Key rules.** Any attribute whose key (case-insensitive) is in the sensitive
-   list — `authorization`, `api_key`, `x-api-key`, `secret`, `client_secret`,
+   list - `authorization`, `api_key`, `x-api-key`, `secret`, `client_secret`,
    `password`, `token`, `access_token`, `refresh_token`, `private_key`,
-   `cookie`, `credentials`, … — has its value replaced with `[REDACTED]`.
+   `cookie`, `credentials`, … - has its value replaced with `[REDACTED]`.
 2. **Value rules.** Every remaining string is scanned for secret-shaped
    substrings and masked: bearer tokens, OpenAI/Anthropic `sk-…` keys (including
    hyphenated `sk-proj-…` / `sk-svcacct-…`), AWS access keys (`AKIA…`), Google API
@@ -21,8 +21,8 @@ Key matching also covers sensitive substrings (e.g. `db_password`,
 
 ## Raw payloads are off by default
 
-Keys that typically hold raw payloads — `prompt`, `messages`, `input`, `output`,
-`completion`, `response`, `arguments`, `content`, … — are dropped to
+Keys that typically hold raw payloads - `prompt`, `messages`, `input`, `output`,
+`completion`, `response`, `arguments`, `content`, … - are dropped to
 `[omitted: payload capture disabled]` unless you opt in with
 `AGENTTRACE_CAPTURE_PAYLOADS=true` (or `RedactionPolicy::allow_payloads()` in the
 SDK). Even with capture on, key and value secret rules still apply.

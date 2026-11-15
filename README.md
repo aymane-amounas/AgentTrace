@@ -1,10 +1,16 @@
-# AgentTrace
+<p align="center">
+  <img src="docs/assets/logo.svg" width="84" alt="AgentTrace" />
+</p>
 
-**See everything your AI agent does. Understand why it does it. Find out where it fails.**
+<h1 align="center">AgentTrace</h1>
+
+<p align="center">
+  <strong>See everything your AI agent does. Understand why it does it. Find out where it fails.</strong>
+</p>
 
 AgentTrace is an OpenTelemetry-inspired observability platform built specifically
 for AI agents. When an agent fails, you shouldn't have to grep scattered logs to
-reconstruct what happened — AgentTrace records structured spans for every run,
+reconstruct what happened - AgentTrace records structured spans for every run,
 model call, tool call, approval, retry and error, and lets you replay the whole
 execution and find the exact span that broke.
 
@@ -16,8 +22,8 @@ execution and find the exact span that broke.
 
 Agent runs are hard to debug: prompts, model calls, tool calls, retries, latency,
 token usage and failures end up spread across logs. AgentTrace gives them one
-structured, queryable shape — a trace tree with timing, status, token/cost
-metadata, and tool arguments redacted by policy — and a local-first viewer to
+structured, queryable shape - a trace tree with timing, status, token/cost
+metadata, and tool arguments redacted by policy - and a local-first viewer to
 explore it.
 
 It is **local-first and private by default**: the collector binds to loopback,
@@ -31,7 +37,7 @@ and secrets are redacted *before* they are ever written to disk.
 | **Model observability** | Provider, model, tokens, cost, latency, retries |
 | **Tool observability** | Tool name, status, execution time, policy-redacted args |
 | **Failure analysis** | The exact failed span and its ancestors, highlighted |
-| **Historical replay** | Step through recorded execution — never re-runs anything |
+| **Historical replay** | Step through recorded execution - never re-runs anything |
 | **Privacy** | Redaction before persistence, raw payloads off by default |
 | **Export** | OTLP/JSON and portable native JSON |
 
@@ -44,12 +50,12 @@ AI agent (SDK)  ──spans──▶  Collector (axum + SQLite)  ──JSON─�
                             validate · redact · store              waterfall · replay
 ```
 
-- **SDK** (`crates/agenttrace`) — Rust instrumentation: schema, ids, tracer,
+- **SDK** (`crates/agenttrace`) - Rust instrumentation: schema, ids, tracer,
   redaction, exporters, OTLP mapping, optional `tracing` bridge.
-- **Collector** (`crates/agenttrace-collector`) — axum service over SQLite:
+- **Collector** (`crates/agenttrace-collector`) - axum service over SQLite:
   ingest, validate, redact-at-boundary, query, export, retention, viewer hosting.
-- **Viewer** (`viewer/`) — React + Vite trace UI.
-- **Sample agent** (`crates/sample-agent`) — fully instrumented demo.
+- **Viewer** (`viewer/`) - React + Vite trace UI.
+- **Sample agent** (`crates/sample-agent`) - fully instrumented demo.
 
 See [`docs/architecture.md`](docs/architecture.md).
 
@@ -157,7 +163,7 @@ Rust (SDK + collector), SQLite, axum, React + Vite + TypeScript, Docker.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).
 
 ---
 <sub>Built by [Aymane](https://github.com/aymane-amounas)</sub>

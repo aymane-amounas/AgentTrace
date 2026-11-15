@@ -51,7 +51,7 @@ export default function Settings() {
         <div style={{ padding: "14px 16px", color: "var(--text-dim)", fontSize: 13, lineHeight: 1.7 }}>
           Authorization headers, API keys, tokens and passwords are redacted at the SDK and again at the
           collector, before anything is written to disk. Raw prompt and tool-argument payloads are dropped by
-          default. Redaction happens before persistence — not just before display.
+          default. Redaction happens before persistence - not just before display.
         </div>
       </div>
     </>

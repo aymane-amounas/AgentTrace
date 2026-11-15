@@ -1,7 +1,7 @@
 // Display formatting helpers.
 
 export function formatDuration(ms: number): string {
-  if (!isFinite(ms) || ms < 0) return "—";
+  if (!isFinite(ms) || ms < 0) return "-";
   if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
   if (ms < 1000) return `${ms.toFixed(ms < 10 ? 2 : 0)}ms`;
   const s = ms / 1000;

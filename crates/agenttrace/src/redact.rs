@@ -2,9 +2,9 @@
 //! they are exported or persisted.
 //!
 //! Two layers run together:
-//! 1. **Key rules** — any attribute whose key looks sensitive (authorization,
+//! 1. **Key rules** - any attribute whose key looks sensitive (authorization,
 //!    api_key, password, ...) has its value replaced wholesale.
-//! 2. **Value rules** — every remaining string value is scanned for secret-shaped
+//! 2. **Value rules** - every remaining string value is scanned for secret-shaped
 //!    substrings (bearer tokens, `sk-...` keys, AWS keys, ...) which are masked.
 //!
 //! Raw payload fields (prompts, messages, tool arguments, completions) are

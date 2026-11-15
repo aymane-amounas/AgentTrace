@@ -125,7 +125,7 @@ function Table({ traces, onOpen }: { traces: TraceSummary[]; onOpen: (id: string
               <StatusBadge status={t.status} />
             </td>
             <td>
-              <div style={{ fontWeight: 500 }}>{t.root_operation ?? "—"}</div>
+              <div style={{ fontWeight: 500 }}>{t.root_operation ?? "-"}</div>
               <div className="mono faint" style={{ fontSize: 11 }}>
                 {shortId(t.trace_id, 16)}
               </div>
@@ -138,12 +138,12 @@ function Table({ traces, onOpen }: { traces: TraceSummary[]; onOpen: (id: string
                   </span>
                 ))
               ) : (
-                <span className="faint">—</span>
+                <span className="faint">-</span>
               )}
             </td>
             <td className="num">{t.span_count}</td>
             <td className="num" style={{ color: t.error_count ? "var(--error)" : undefined }}>
-              {t.error_count || "—"}
+              {t.error_count || "-"}
             </td>
             <td className="num">{formatTokens(t.input_tokens + t.output_tokens)}</td>
             <td className="num">{formatCost(t.estimated_cost)}</td>

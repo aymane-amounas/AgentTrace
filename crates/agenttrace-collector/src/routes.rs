@@ -1,14 +1,14 @@
 //! HTTP API for ingestion, querying, export and the viewer.
 //!
 //! Routes:
-//! * `POST /v1/spans`            — ingest spans (`{"spans":[...]}`, an array, or one span)
-//! * `GET  /v1/traces`          — list trace summaries (filterable)
-//! * `GET  /v1/traces/:id`      — all spans of a trace (detail + replay)
+//! * `POST /v1/spans`            - ingest spans (`{"spans":[...]}`, an array, or one span)
+//! * `GET  /v1/traces`          - list trace summaries (filterable)
+//! * `GET  /v1/traces/:id`      - all spans of a trace (detail + replay)
 //! * `GET  /v1/traces/:id/export?format=native|otlp`
-//! * `GET  /v1/stats`           — overview metrics
-//! * `GET  /v1/config`          — effective privacy/runtime settings (read-only)
-//! * `GET  /healthz`            — health check
-//! * `GET  /*`                  — the built viewer (SPA), if present
+//! * `GET  /v1/stats`           - overview metrics
+//! * `GET  /v1/config`          - effective privacy/runtime settings (read-only)
+//! * `GET  /healthz`            - health check
+//! * `GET  /*`                  - the built viewer (SPA), if present
 
 use crate::config::Config;
 use crate::storage::{Storage, TraceFilter};

@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 #[derive(Clone, Debug)]
 pub struct Config {
-    /// Address to bind. Defaults to 127.0.0.1 (loopback only) — never 0.0.0.0.
+    /// Address to bind. Defaults to 127.0.0.1 (loopback only) - never 0.0.0.0.
     pub bind_addr: SocketAddr,
     /// SQLite database path.
     pub db_path: PathBuf,

@@ -45,7 +45,7 @@ materialized as a column in the collector for querying.
 
 ### Sensitivity
 
-- **Never stored:** authorization headers, API keys, tokens, passwords — any
+- **Never stored:** authorization headers, API keys, tokens, passwords - any
   attribute whose key matches the sensitive-key list, and any value matching a
   secret pattern (bearer/`sk-`/AWS/GCP/GitHub/Slack/JWT), are masked to
   `[REDACTED]`.

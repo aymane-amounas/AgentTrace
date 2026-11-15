@@ -3,7 +3,7 @@
 //! It simulates realistic agent behavior (no real API keys needed) so the whole
 //! AgentTrace pipeline can be demonstrated end to end. It exercises every span
 //! type and the "killer demo": a run that calls a model, invokes tools, hits a
-//! failing tool, retries, and ultimately fails — with the root cause visible in
+//! failing tool, retries, and ultimately fails - with the root cause visible in
 //! the viewer.
 //!
 //! Spans are exported both to a local NDJSON file and (unless `--no-http`) to the
@@ -120,7 +120,7 @@ fn failing_research_trace(tracer: &Tracer) -> String {
     think(5);
     approval.end();
 
-    // 4. Tool call: fetch a page — FAILS with a timeout.
+    // 4. Tool call: fetch a page - FAILS with a timeout.
     let mut fetch = run.child(SpanType::ToolCall, "fetch_page");
     fetch
         .set_tool_name("fetch_page")
@@ -129,7 +129,7 @@ fn failing_research_trace(tracer: &Tracer) -> String {
     fetch.set_error("TimeoutError", "GET timed out after 5000ms");
     fetch.end();
 
-    // 5. Retry wrapping a second attempt — also fails.
+    // 5. Retry wrapping a second attempt - also fails.
     let mut retry = run.child(SpanType::Retry, "fetch_page.retry");
     retry.set_retry_count(1).set_attr("backoff_ms", 500);
     let mut fetch2 = retry.child(SpanType::ToolCall, "fetch_page");

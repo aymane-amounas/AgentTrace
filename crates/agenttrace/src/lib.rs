@@ -19,11 +19,11 @@
 //! ```
 //!
 //! ## Design guarantees
-//! * **Redaction before export** — every span is scrubbed at one choke point
+//! * **Redaction before export** - every span is scrubbed at one choke point
 //!   before any exporter sees it. Raw payloads are dropped unless opted in.
-//! * **Never crashes the agent** — exporters are non-blocking and swallow errors;
+//! * **Never crashes the agent** - exporters are non-blocking and swallow errors;
 //!   the HTTP exporter drops spans rather than stalling if the collector is down.
-//! * **Concurrency-correct** — no hidden global state; children are created from a
+//! * **Concurrency-correct** - no hidden global state; children are created from a
 //!   `Copy` [`SpanContext`], so concurrent runs stay isolated.
 
 pub mod export;

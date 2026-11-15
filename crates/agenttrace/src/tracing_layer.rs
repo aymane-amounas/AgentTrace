@@ -2,12 +2,12 @@
 //!
 //! Many Rust agent runtimes (Venus Agent included) already emit `tracing` spans.
 //! Adding [`AgentTraceLayer`] to their subscriber turns those spans into
-//! AgentTrace spans with **no changes to the agent's own code** — the adapter is
+//! AgentTrace spans with **no changes to the agent's own code** - the adapter is
 //! isolated and optional.
 //!
 //! ## Field conventions
 //! Span fields prefixed `at.` steer the mapping:
-//! * `at.span_type` — one of `agent_run`, `model_call`, `tool_call`, `approval`,
+//! * `at.span_type` - one of `agent_run`, `model_call`, `tool_call`, `approval`,
 //!   `retry`, `error` (otherwise inferred from the span name).
 //! * `at.provider`, `at.model`, `at.tool_name`
 //! * `at.input_tokens`, `at.output_tokens`, `at.retry_count`

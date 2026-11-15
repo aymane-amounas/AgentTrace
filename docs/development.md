@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Rust (stable, 1.85+ — a transitive dependency uses edition 2024)
+- Rust (stable, 1.85+ - a transitive dependency uses edition 2024)
 - Node 20+ (22 used in CI)
 - Docker (optional, for the container build)
 

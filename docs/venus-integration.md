@@ -4,7 +4,7 @@
 runtime that already emits [`tracing`](https://docs.rs/tracing) spans and
 initializes a `tracing-subscriber`. AgentTrace plugs in as an **additional
 subscriber layer**, so instrumenting Venus needs **no changes to its core logic**
-— only its subscriber setup.
+- only its subscriber setup.
 
 This keeps the adapter isolated and optional: the sample agent (and the SDK in
 general) works with or without Venus.
@@ -89,4 +89,4 @@ To get deep, automatic tracing, add `tracing::info_span!` annotations (with the
 `at.*` fields above) at Venus's model-call sites (`src/cli.rs`, `src/tui.rs`) and
 its capability runtime (`src/orchestrator.rs::run`). These are additive, need no
 new dependency (Venus already uses `tracing`), and leave default behavior
-unchanged — a good first PR, left for review rather than applied blindly.
+unchanged - a good first PR, left for review rather than applied blindly.

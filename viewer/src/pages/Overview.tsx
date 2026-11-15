@@ -94,7 +94,7 @@ function RecentTable({ traces, onOpen }: { traces: TraceSummary[]; onOpen: (id: 
             <td>
               <StatusBadge status={t.status} />
             </td>
-            <td>{t.root_operation ?? <span className="faint">—</span>}</td>
+            <td>{t.root_operation ?? <span className="faint">-</span>}</td>
             <td className="mono muted">{shortId(t.trace_id, 12)}</td>
             <td className="num">{t.span_count}</td>
             <td className="num">{formatTokens(t.input_tokens + t.output_tokens)}</td>

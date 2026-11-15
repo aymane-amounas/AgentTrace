@@ -1,7 +1,7 @@
 //! HTTP exporter: ships spans to the AgentTrace collector.
 //!
 //! Design goals (a collector outage must never take down the agent):
-//! * `export` is non-blocking — it hands the span to a bounded queue via
+//! * `export` is non-blocking - it hands the span to a bounded queue via
 //!   `try_send` and **drops** the span if the queue is full.
 //! * A single background thread batches queued spans and POSTs them with a short
 //!   timeout. Network errors are swallowed (optionally surfaced via a counter).

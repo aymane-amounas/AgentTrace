@@ -25,12 +25,12 @@ and the viewer reads them back.
 
 ## Components
 
-### SDK — `crates/agenttrace`
+### SDK - `crates/agenttrace`
 The instrumentation library. Public API is `Tracer` + `Span` (see
 [`tracer.rs`](../crates/agenttrace/src/tracer.rs)). Responsibilities:
 
 - Generate OTel-style trace/span ids (`id.rs`).
-- Maintain parent/child structure via a `Copy` `SpanContext` — no hidden global
+- Maintain parent/child structure via a `Copy` `SpanContext` - no hidden global
   state, so concurrent runs stay isolated.
 - Record timing, status, token/cost metadata, events.
 - **Redact every span at one choke point before export** (`redact.rs`).
@@ -41,7 +41,7 @@ The instrumentation library. Public API is `Tracer` + `Span` (see
 The SDK never requires the collector to be running; the HTTP exporter is
 non-blocking and drops spans rather than stalling the agent.
 
-### Collector — `crates/agenttrace-collector`
+### Collector - `crates/agenttrace-collector`
 An `axum` service over SQLite (`rusqlite`, bundled). It:
 
 - Accepts spans on `POST /v1/spans` (wrapper object, array, or single span).
@@ -56,12 +56,12 @@ An `axum` service over SQLite (`rusqlite`, bundled). It:
 Storage is interface-light: the `Storage` type owns all SQL, so a different
 backend could be added without touching the SDK or API handlers.
 
-### Viewer — `viewer/`
+### Viewer - `viewer/`
 React + Vite + TypeScript. Pages: Overview (metrics), Traces (filterable
 explorer), Trace detail (waterfall + span tree + detail panel + historical
 replay + export), Privacy. No backend logic lives here; it only reads the API.
 
-### Sample agent — `crates/sample-agent`
+### Sample agent - `crates/sample-agent`
 A runnable agent that exercises every span type and produces the signature
 failure demo (model call → tools → failing tool → retry → failed run).
 
