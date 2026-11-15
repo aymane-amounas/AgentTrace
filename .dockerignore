@@ -1,0 +1,13 @@
+target/
+**/target/
+viewer/node_modules/
+viewer/dist/
+.git/
+*.db
+*.db-wal
+*.db-shm
+data/
+traces/
+.env
+.env.*
+.DS_Store

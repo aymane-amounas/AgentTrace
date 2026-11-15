@@ -1,0 +1,31 @@
+services:
+  collector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agenttrace-collector:latest
+    container_name: agenttrace
+    # Publish to loopback only. Change the left-hand host at your own risk —
+    # the collector is not hardened for public exposure.
+    ports:
+      - "127.0.0.1:4357:4357"
+    environment:
+      AGENTTRACE_HOST: "0.0.0.0"
+      AGENTTRACE_PORT: "4357"
+      AGENTTRACE_DB: "/data/agenttrace.db"
+      AGENTTRACE_VIEWER_DIR: "/app/viewer"
+      # Raw prompt/tool-argument capture is OFF by default. Opt in explicitly.
+      AGENTTRACE_CAPTURE_PAYLOADS: "false"
+      AGENTTRACE_RETENTION_DAYS: "30"
+    volumes:
+      - agenttrace-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:4357/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  agenttrace-data:

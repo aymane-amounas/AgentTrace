@@ -1,0 +1,17 @@
+[package]
+name = "sample-agent"
+description = "A sample AI agent fully instrumented with AgentTrace: model calls, tools, retries, approvals, nested ops, success and failure."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "sample-agent"
+path = "src/main.rs"
+
+[dependencies]
+agenttrace = { path = "../agenttrace", features = ["http"] }
+serde_json = { workspace = true }

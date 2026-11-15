@@ -1,0 +1,28 @@
+[package]
+name = "agenttrace"
+description = "Observability SDK for AI agents: structured spans for runs, model calls, tool calls, retries, approvals and errors."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+rand = "0.8"
+regex = "1"
+# Optional HTTP exporter (ships spans to the collector). Keeps core SDK dependency-light.
+ureq = { version = "2", optional = true, default-features = false, features = ["json"] }
+# Optional bridge that turns `tracing` spans/events into AgentTrace spans (used by the Venus adapter).
+tracing = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, optional = true }
+
+[features]
+default = []
+http = ["dep:ureq"]
+tracing-layer = ["dep:tracing", "dep:tracing-subscriber"]
+
+[dev-dependencies]
+tempfile = "3"
