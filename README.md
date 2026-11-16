@@ -29,6 +29,25 @@ explore it.
 It is **local-first and private by default**: the collector binds to loopback,
 and secrets are redacted *before* they are ever written to disk.
 
+## How it compares
+
+The agent-observability space is crowded (Langfuse, Arize Phoenix, Helicone,
+OpenLLMetry and others), and several of them can self-host too. AgentTrace is a
+deliberately narrow, opinionated take rather than a general LLM-tracing platform:
+
+- **Shaped like an agent run, not a request log.** Approvals, retries and tool
+  calls are first-class span types, so a failed run reads as a tree you follow -
+  not flat spans you reassemble.
+- **Redaction before persistence.** Secrets are stripped at the SDK *and* the
+  collector before anything is written, not filtered at display time.
+- **One binary, no account, loopback by default.** `docker compose up` (or a
+  single collector binary) plus a static viewer. Nothing leaves your machine
+  unless you opt in.
+
+If you need multi-tenant dashboards and a managed service, a hosted tool will be
+more mature. AgentTrace is for the developer who wants their agent's full
+execution locally, with no project to create and no keys to hand over.
+
 ## Features
 
 | Feature | What it does |
