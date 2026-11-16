@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please report security issues privately via a
-[GitHub security advisory](https://github.com/aymane-amounas/agenttrace/security/advisories/new)
+[GitHub security advisory](https://github.com/aymane-amounas/AgentTrace/security/advisories/new)
 rather than a public issue. You'll get an acknowledgement as soon as possible.
 
 ## Security model (summary)

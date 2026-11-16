@@ -40,4 +40,4 @@ First release.
 - Bumped `rusqlite` 0.32 -> 0.43 to pull patched `libsqlite3-sys` >= 0.40,
   resolving RUSTSEC-2026-0459 (medium). CI now runs `cargo audit` as a real gate.
 
-[0.1.0]: https://github.com/aymane-amounas/agenttrace/releases/tag/v0.1.0
+[0.1.0]: https://github.com/aymane-amounas/AgentTrace/releases/tag/v0.1.0

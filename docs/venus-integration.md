@@ -40,7 +40,7 @@ tracing_subscriber::registry()
 Add the dependency with the feature:
 
 ```toml
-agenttrace = { git = "https://github.com/aymane-amounas/agenttrace", features = ["http", "tracing-layer"] }
+agenttrace = { git = "https://github.com/aymane-amounas/AgentTrace", features = ["http", "tracing-layer"] }
 ```
 
 ## Emitting rich spans

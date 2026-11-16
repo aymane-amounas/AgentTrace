@@ -10,7 +10,7 @@ members = [
 version = "0.1.0"
 edition = "2021"
 license = "LicenseRef-Aymane-Noncommercial-Attribution-1.0"
-repository = "https://github.com/aymane-amounas/agenttrace"
+repository = "https://github.com/aymane-amounas/AgentTrace"
 rust-version = "1.85"
 
 [workspace.dependencies]
