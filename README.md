@@ -137,6 +137,15 @@ research.agent                      error   228ms
    └─ fetch_page          tool      error    60ms   TimeoutError (attempt 2)
 ```
 
+## Using the viewer
+
+The collector serves the viewer at **http://127.0.0.1:4357/** - it hosts the built static bundle, so no separate dev server is needed.
+
+- **Overview** - totals at a glance: traces, spans, failed traces, model/tool calls, tokens, estimated cost, average duration, and the most recent runs.
+- **Traces** - every run as a row (status, operation, spans, tokens, cost, duration), filterable by status, type, provider, model, text, duration and time.
+- **Trace detail** - the execution waterfall: a parent/child span tree with per-span timing bars, color-coded by type (run, model, tool, approval, retry). Failed spans are highlighted, and selecting a span opens its full detail (model, tokens, cost, tool arguments, error). **Replay** steps through the recorded run and never re-executes your agent.
+- **Export** - download any trace as native JSON or OTLP from the detail view.
+
 ## Security & privacy
 
 - Collector binds to **loopback only**; no public exposure by default.
@@ -159,6 +168,23 @@ Details and limitations: [`docs/privacy.md`](docs/privacy.md) ·
 | `GET` | `/v1/config` | Effective privacy/runtime settings |
 | `GET` | `/healthz` | Health check |
 
+## Configuration
+
+The collector reads `AGENTTRACE_*` environment variables and falls back to safe defaults. Binding to a non-loopback host is allowed but logged as unhardened.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `AGENTTRACE_HOST` | `127.0.0.1` | Bind address (loopback by default). |
+| `AGENTTRACE_PORT` | `4357` | Port for the API and viewer. |
+| `AGENTTRACE_DB` | `agenttrace.db` | SQLite database path. |
+| `AGENTTRACE_VIEWER_DIR` | `viewer/dist` | Built viewer to serve. |
+| `AGENTTRACE_CAPTURE_PAYLOADS` | `false` | Store raw prompts/tool args. Secrets are still masked; off by default. |
+| `AGENTTRACE_MAX_BODY_BYTES` | `4194304` | Max ingest body (4 MiB). |
+| `AGENTTRACE_RETENTION_DAYS` | `30` | Spans older than this are pruned. |
+| `RUST_LOG` | - | Standard `tracing` filter, e.g. `agenttrace_collector=debug`. |
+
+The effective settings are readable at runtime via `GET /v1/config`.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md)
@@ -168,6 +194,13 @@ Details and limitations: [`docs/privacy.md`](docs/privacy.md) ·
 - [Development](docs/development.md)
 - [Venus Agent integration](docs/venus-integration.md)
 - [Implementation status](IMPLEMENTATION_STATUS.md)
+
+## Current limitations
+
+- **Single-node, SQLite-backed.** Built for local, single-developer use, not a multi-tenant hosted service.
+- **OTLP is export-only.** Spans are ingested in the native format; full OTLP *ingestion* is on the roadmap.
+- **No authentication.** The collector assumes a loopback, single-user environment; there is no auth for a remote mode yet.
+- **Redaction is key/value masking**, not free-text content inspection - it catches known secret shapes and common secret keys, and raw payload capture stays off by default.
 
 ## Roadmap
 
