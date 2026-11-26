@@ -39,10 +39,29 @@ This is covered by tests, including one that POSTs a raw secret as an untrusted
 client and asserts it never appears in storage
 (`crates/agenttrace-collector/tests/api.rs`).
 
+## Fail closed
+
+After the storage-boundary redaction pass, the serialized span is scanned once
+more for known secret shapes (`Storage::store_span`). If a secret still matches,
+the span is **rejected and not written** rather than persisted raw. This covers
+a payload or key shape the rules did not anticipate: the worst case is a dropped
+span, never a leaked one. Covered by
+`storage::tests::fails_closed_when_policy_misses_a_secret`.
+
 ## Network & input safety
 
 - The collector **binds to loopback (`127.0.0.1`) by default**. Binding elsewhere
   is an explicit, logged choice; the Docker image publishes only to `127.0.0.1`.
+- **CORS is scoped to local origins** (`localhost`/`127.0.0.1`/`[::1]`), not
+  open. A page on another site the user is browsing cannot read traces off the
+  loopback collector cross-origin. Same-origin (the collector serving the built
+  viewer) needs no CORS.
+- **Response security headers**: `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, and a tight
+  `Content-Security-Policy` (`default-src 'self'`, no inline scripts,
+  `frame-ancestors 'none'`).
+- Internal errors are logged server-side; the API returns a generic `internal
+  error` rather than echoing SQLite or other internal error text.
 - Request bodies are size-limited (default 4 MiB).
 - Trace ids are validated (32 hex chars) before any query.
 - Malformed spans are rejected per-span without failing the whole batch.
@@ -50,8 +69,12 @@ client and asserts it never appears in storage
 ## Limitations (be honest about these)
 
 - Redaction is pattern/heuristic based. A novel secret format or a secret placed
-  in an unexpected, non-flagged field could slip through. Keep payload capture
-  off for anything sensitive, and add custom rules for your own formats.
+  in an unexpected, non-flagged field could slip through the key/value rules. The
+  fail-closed scan catches known secret *shapes* even then, but a credential with
+  no recognizable shape (for example a plain password embedded inside a
+  connection string like `postgres://user:pw@host`) is not masked by value rules.
+  Keep payload capture off for anything sensitive, and add custom rules for your
+  own formats.
 - Redaction is applied at write time. Spans stored *before* a redaction-rule
   change are not retroactively re-scrubbed; drop the database to purge them.
 - `estimated_cost` is an estimate from a static price table, not billing truth.

@@ -152,6 +152,10 @@ The collector serves the viewer at **http://127.0.0.1:4357/** - it hosts the bui
 - API keys, tokens, passwords and auth headers are **redacted before
   persistence**, at both the SDK and the collector.
 - Raw prompts and tool arguments are **not stored unless you opt in**.
+- Storage **fails closed**: if a secret shape survives redaction, the span is
+  dropped, not written raw.
+- CORS is scoped to local origins; responses carry `nosniff`, frame-deny and a
+  tight CSP; internal errors are not echoed to clients.
 
 Details and limitations: [`docs/privacy.md`](docs/privacy.md) ·
 [`SECURITY.md`](SECURITY.md).
@@ -194,6 +198,45 @@ The effective settings are readable at runtime via `GET /v1/config`.
 - [Development](docs/development.md)
 - [Venus Agent integration](docs/venus-integration.md)
 - [Implementation status](IMPLEMENTATION_STATUS.md)
+
+## OpenTelemetry compatibility
+
+AgentTrace is OpenTelemetry-*inspired*, not an OpenTelemetry implementation. Be
+precise about what that means:
+
+| Aspect | Status | Detail |
+| --- | --- | --- |
+| Trace id width | Compatible | 128-bit, lowercase hex, same as W3C/OTel trace ids |
+| Span id width | Compatible | 64-bit, lowercase hex, same as OTel span ids |
+| Parent/child | Compatible | `parent_span_id` references the parent span id; root has none |
+| Span status | Compatible | `unset`/`ok`/`error` map to OTLP status codes `0`/`1`/`2` |
+| OTLP/JSON export | Supported, tested | `GET /v1/traces/:id/export?format=otlp` emits an `ExportTraceServiceRequest`; `gen_ai.*` conventions for model fields, `agenttrace.*` for the rest |
+| OTLP ingestion | Not supported | The collector ingests only the native `POST /v1/spans` format; there is no OTLP receiver |
+| W3C trace-context propagation | Not supported | No `traceparent`/`tracestate` inject or extract; ids are generated per run, not continued from an upstream context |
+| OTLP/gRPC and protobuf | Not supported | Export is JSON only |
+| Metrics / logs signals | Not supported | Traces only |
+
+In short: the data model and ids line up with OpenTelemetry well enough to export
+a trace into an OTLP/JSON backend, but AgentTrace is not a drop-in OTel SDK or
+collector and does not join an existing distributed trace.
+
+## Performance
+
+Measured locally on a single machine with the release build and SQLite (WAL),
+loopback HTTP, using the sample agent's span shapes. These are not a benchmark
+suite; reproduce with `scripts/bench.sh`. Your numbers will vary with hardware
+and payload size.
+
+| Metric | Value | Method |
+| --- | --- | --- |
+| Ingestion throughput | _to be filled_ | spans/sec via batched `POST /v1/spans` |
+| Storage per span | _to be filled_ | SQLite file growth / spans stored, payloads off |
+| Storage per trace | _to be filled_ | ~7 spans/trace in the sample |
+| Trace list query | _to be filled_ | `GET /v1/traces` p50 over a populated DB |
+| Trace detail query | _to be filled_ | `GET /v1/traces/:id` p50 |
+
+Retention is time-based: spans older than `AGENTTRACE_RETENTION_DAYS` (default 30)
+are pruned on startup and hourly thereafter.
 
 ## Current limitations
 
