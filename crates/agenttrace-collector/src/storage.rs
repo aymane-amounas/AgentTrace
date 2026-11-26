@@ -148,6 +148,14 @@ impl Storage {
 
         let duration = span.duration_ms();
         let data = serde_json::to_string(&span)?;
+
+        // Fail closed: if the redaction pass left a secret-shaped value in the
+        // serialized span, refuse to persist it rather than write raw. This
+        // guards against a new key/payload shape the rules did not catch, and
+        // never logs the offending value.
+        if agenttrace::redact::contains_obvious_secret(&data) {
+            anyhow::bail!("span rejected: secret survived redaction, not persisted");
+        }
         let now = agenttrace::time::now_unix_nanos() as i64;
 
         let conn = self.conn.lock().unwrap();
@@ -455,6 +463,46 @@ mod tests {
         st.store_span(s).unwrap();
         let back = &st.get_trace_spans(&t.to_hex()).unwrap()[0];
         assert_eq!(back.attributes["api_key"], serde_json::json!("[REDACTED]"));
+    }
+
+    #[test]
+    fn fails_closed_when_policy_misses_a_secret() {
+        // A deliberately broken policy: no key rules, no value patterns. The
+        // span-level redaction will NOT catch a bearer token sitting in a
+        // non-payload attribute. Storage must still refuse to persist it raw.
+        let weak = RedactionPolicy {
+            capture_payloads: true,
+            redacted_keys: vec![],
+            payload_keys: vec![],
+            value_patterns: vec![],
+        };
+        let st = Storage::open_in_memory(weak).unwrap();
+        let t = TraceId::generate();
+        let mut s = span(t, None, SpanType::ModelCall, "chat");
+        s.attributes.insert(
+            "note".into(),
+            serde_json::json!("Authorization: Bearer abcdefghijklmnopqrstuvwxyz0123"),
+        );
+        // Not persisted (fail closed), and nothing readable back for the trace.
+        assert!(st.store_span(s).is_err());
+        assert!(st.get_trace_spans(&t.to_hex()).unwrap().is_empty());
+        assert_eq!(st.trace_count().unwrap(), 0);
+    }
+
+    #[test]
+    fn strict_policy_redacts_then_persists_same_secret() {
+        // The same secret under the strict policy is masked and DOES persist.
+        let st = store();
+        let t = TraceId::generate();
+        let mut s = span(t, None, SpanType::ModelCall, "chat");
+        s.attributes.insert(
+            "note".into(),
+            serde_json::json!("Authorization: Bearer abcdefghijklmnopqrstuvwxyz0123"),
+        );
+        st.store_span(s).unwrap();
+        let back = &st.get_trace_spans(&t.to_hex()).unwrap()[0];
+        let json = serde_json::to_string(back).unwrap();
+        assert!(!agenttrace::redact::contains_obvious_secret(&json));
     }
 
     #[test]
