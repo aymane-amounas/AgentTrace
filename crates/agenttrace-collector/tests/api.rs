@@ -182,6 +182,56 @@ async fn ingest_query_inspect_and_export() {
 }
 
 #[tokio::test]
+async fn sets_security_headers_and_scopes_cors_to_localhost() {
+    let router = app(test_state());
+
+    // Security headers present on an API response.
+    let resp = router
+        .clone()
+        .oneshot(Request::get("/healthz").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    let h = resp.headers();
+    assert_eq!(h.get("x-content-type-options").unwrap(), "nosniff");
+    assert_eq!(h.get("x-frame-options").unwrap(), "DENY");
+    assert!(h.get("content-security-policy").is_some());
+
+    // A request from a foreign site gets no CORS allow-origin header, so the
+    // browser will not expose the response to that page.
+    let resp = router
+        .clone()
+        .oneshot(
+            Request::get("/v1/traces")
+                .header("origin", "https://evil.example.com")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert!(resp
+        .headers()
+        .get("access-control-allow-origin")
+        .is_none());
+
+    // The local viewer dev server is allowed.
+    let resp = router
+        .oneshot(
+            Request::get("/v1/traces")
+                .header("origin", "http://localhost:5173")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        resp.headers()
+            .get("access-control-allow-origin")
+            .unwrap(),
+        "http://localhost:5173"
+    );
+}
+
+#[tokio::test]
 async fn rejects_malformed_trace_id() {
     let router = app(test_state());
     let resp = router
