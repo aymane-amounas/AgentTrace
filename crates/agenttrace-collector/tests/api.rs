@@ -208,10 +208,7 @@ async fn sets_security_headers_and_scopes_cors_to_localhost() {
         )
         .await
         .unwrap();
-    assert!(resp
-        .headers()
-        .get("access-control-allow-origin")
-        .is_none());
+    assert!(resp.headers().get("access-control-allow-origin").is_none());
 
     // The local viewer dev server is allowed.
     let resp = router
@@ -224,9 +221,7 @@ async fn sets_security_headers_and_scopes_cors_to_localhost() {
         .await
         .unwrap();
     assert_eq!(
-        resp.headers()
-            .get("access-control-allow-origin")
-            .unwrap(),
+        resp.headers().get("access-control-allow-origin").unwrap(),
         "http://localhost:5173"
     );
 }

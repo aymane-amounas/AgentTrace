@@ -13,6 +13,7 @@
 use crate::config::Config;
 use crate::storage::{Storage, TraceFilter};
 use agenttrace::span::SpanData;
+use axum::http::{HeaderValue, Method};
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -20,7 +21,6 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use axum::http::{HeaderValue, Method};
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
@@ -53,7 +53,9 @@ pub fn app(state: AppState) -> Router {
         // site the user is browsing cannot read their traces off localhost.
         .layer(
             CorsLayer::new()
-                .allow_origin(AllowOrigin::predicate(|origin, _req| is_local_origin(origin)))
+                .allow_origin(AllowOrigin::predicate(|origin, _req| {
+                    is_local_origin(origin)
+                }))
                 .allow_methods([Method::GET, Method::POST])
                 .allow_headers(tower_http::cors::Any),
         )
@@ -76,7 +78,10 @@ fn is_local_origin(origin: &HeaderValue) -> bool {
     let Ok(s) = origin.to_str() else {
         return false;
     };
-    let host = match s.strip_prefix("http://").or_else(|| s.strip_prefix("https://")) {
+    let host = match s
+        .strip_prefix("http://")
+        .or_else(|| s.strip_prefix("https://"))
+    {
         Some(rest) => rest.split(['/', ':']).next().unwrap_or(""),
         None => return false,
     };
@@ -86,18 +91,15 @@ fn is_local_origin(origin: &HeaderValue) -> bool {
 /// Conservative response headers for the viewer. The collector serves an SPA
 /// from its own origin, so a tight CSP and framing/nosniff guards cost nothing
 /// and shrink the XSS/clickjacking surface.
-async fn security_headers(
-    req: axum::extract::Request,
-    next: axum::middleware::Next,
-) -> Response {
+async fn security_headers(req: axum::extract::Request, next: axum::middleware::Next) -> Response {
     let mut res = next.run(req).await;
     let h = res.headers_mut();
-    h.insert("x-content-type-options", HeaderValue::from_static("nosniff"));
-    h.insert("x-frame-options", HeaderValue::from_static("DENY"));
     h.insert(
-        "referrer-policy",
-        HeaderValue::from_static("no-referrer"),
+        "x-content-type-options",
+        HeaderValue::from_static("nosniff"),
     );
+    h.insert("x-frame-options", HeaderValue::from_static("DENY"));
+    h.insert("referrer-policy", HeaderValue::from_static("no-referrer"));
     h.insert(
         "content-security-policy",
         HeaderValue::from_static(
