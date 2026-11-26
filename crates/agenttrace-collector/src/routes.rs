@@ -20,10 +20,11 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use axum::http::{HeaderValue, Method};
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 
 #[derive(Clone)]
@@ -47,9 +48,16 @@ pub fn app(state: AppState) -> Router {
         .route("/v1/config", get(runtime_config))
         .with_state(state)
         .layer(RequestBodyLimitLayer::new(max_body))
-        // The collector binds to loopback by default; permissive CORS lets the
-        // viewer dev server talk to it locally.
-        .layer(CorsLayer::permissive());
+        // Same-origin (the collector serves the built viewer) needs no CORS. For
+        // the dev server we allow only local origins, so a page on some other
+        // site the user is browsing cannot read their traces off localhost.
+        .layer(
+            CorsLayer::new()
+                .allow_origin(AllowOrigin::predicate(|origin, _req| is_local_origin(origin)))
+                .allow_methods([Method::GET, Method::POST])
+                .allow_headers(tower_http::cors::Any),
+        )
+        .layer(axum::middleware::from_fn(security_headers));
 
     // Serve the built viewer if it exists, with SPA fallback to index.html.
     let index = viewer_dir.join("index.html");
@@ -60,6 +68,45 @@ pub fn app(state: AppState) -> Router {
     } else {
         api.fallback(get(no_viewer))
     }
+}
+
+/// Allow cross-origin requests only from a loopback origin (the viewer dev
+/// server). Matches `http(s)://localhost`, `127.0.0.1` or `[::1]` on any port.
+fn is_local_origin(origin: &HeaderValue) -> bool {
+    let Ok(s) = origin.to_str() else {
+        return false;
+    };
+    let host = match s.strip_prefix("http://").or_else(|| s.strip_prefix("https://")) {
+        Some(rest) => rest.split(['/', ':']).next().unwrap_or(""),
+        None => return false,
+    };
+    matches!(host, "localhost" | "127.0.0.1" | "::1" | "[::1]")
+}
+
+/// Conservative response headers for the viewer. The collector serves an SPA
+/// from its own origin, so a tight CSP and framing/nosniff guards cost nothing
+/// and shrink the XSS/clickjacking surface.
+async fn security_headers(
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> Response {
+    let mut res = next.run(req).await;
+    let h = res.headers_mut();
+    h.insert("x-content-type-options", HeaderValue::from_static("nosniff"));
+    h.insert("x-frame-options", HeaderValue::from_static("DENY"));
+    h.insert(
+        "referrer-policy",
+        HeaderValue::from_static("no-referrer"),
+    );
+    h.insert(
+        "content-security-policy",
+        HeaderValue::from_static(
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; \
+             img-src 'self' data:; connect-src 'self'; base-uri 'none'; \
+             frame-ancestors 'none'; object-src 'none'",
+        ),
+    );
+    res
 }
 
 // --- error type ---
@@ -76,10 +123,13 @@ impl ApiError {
             message: msg.into(),
         }
     }
-    fn internal(msg: impl Into<String>) -> Self {
+    /// Log the real cause server-side and return a generic message so SQLite or
+    /// other internal error text is not echoed back to the client.
+    fn internal(detail: impl std::fmt::Display) -> Self {
+        tracing::error!(error = %detail, "internal error serving request");
         ApiError {
             status: StatusCode::INTERNAL_SERVER_ERROR,
-            message: msg.into(),
+            message: "internal error".into(),
         }
     }
 }
