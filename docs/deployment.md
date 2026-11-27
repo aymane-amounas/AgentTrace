@@ -8,17 +8,19 @@ docker compose up --build -d
 
 This builds the viewer, compiles the collector, and runs it. The API and viewer
 are then at <http://127.0.0.1:4357/>. The compose file publishes the port to
-**loopback only**.
+loopback only, so it is not reachable from the network.
 
-- Data persists in the named volume `agenttrace-data` (`/data/agenttrace.db`).
-- Health: `curl http://127.0.0.1:4357/healthz`.
+A few things worth knowing:
+
+- Data lives in the named volume `agenttrace-data` (`/data/agenttrace.db`).
+- Health check: `curl http://127.0.0.1:4357/healthz`.
 - Logs: `docker compose logs -f`.
-- Stop: `docker compose down` (keeps the volume). Remove data with
-  `docker compose down -v`.
+- Stop with `docker compose down`, which keeps the volume. To remove the data too,
+  use `docker compose down -v`.
 
-### Backup & recovery
+### Backup and recovery
 
-The database is a single SQLite file in the volume.
+The database is a single SQLite file in the volume, so backup is just copying it.
 
 ```bash
 # Backup
@@ -27,8 +29,8 @@ docker compose exec collector sh -c 'cat /data/agenttrace.db' > backup.db
 docker compose cp backup.db collector:/data/agenttrace.db
 ```
 
-For a local (non-Docker) run, just copy `agenttrace.db` (and `-wal`/`-shm` if
-present) while the collector is stopped.
+For a local (non-Docker) run, copy `agenttrace.db` (and the `-wal`/`-shm` files if
+they are present) while the collector is stopped.
 
 ## Local (no Docker)
 
@@ -44,11 +46,12 @@ cargo run --release -p agenttrace-collector
 cargo run -p sample-agent
 ```
 
-Open <http://127.0.0.1:4357/>.
+Then open <http://127.0.0.1:4357/>.
 
 ## Configuration
 
-All configuration is via environment variables (safe defaults shown):
+Everything is configured through environment variables. The defaults below are the
+safe ones.
 
 | Variable                      | Default         | Purpose |
 | ----------------------------- | --------------- | ------- |
@@ -63,7 +66,8 @@ All configuration is via environment variables (safe defaults shown):
 
 ## Security notes
 
-- Never expose the collector publicly. It has no auth and relies on loopback
-  binding. If you must reach it remotely, put it behind an authenticated reverse
-  proxy or an SSH tunnel.
-- Do not hardcode secrets in Compose files or images; none are required.
+Never expose the collector publicly. It has no auth and relies on loopback
+binding. If you have to reach it remotely, put it behind an authenticated reverse
+proxy or an SSH tunnel.
+
+Do not hardcode secrets in Compose files or images. None are required anyway.
