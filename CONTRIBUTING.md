@@ -1,15 +1,13 @@
 # Contributing
 
-Thanks for your interest in AgentTrace.
+Thanks for taking a look at AgentTrace.
 
-## Getting started
-
-See [`docs/development.md`](docs/development.md) for the workspace layout and
-local setup.
+For the workspace layout and local setup, start with
+[`docs/development.md`](docs/development.md).
 
 ## Before you open a PR
 
-Run the same checks CI runs:
+Run the same checks CI runs, so nothing surprises you later:
 
 ```bash
 cargo fmt --all -- --check
@@ -21,14 +19,17 @@ npm --prefix viewer run build
 
 ## Guidelines
 
+A few things I care about:
+
 - Keep the SDK, collector, storage and viewer independently testable.
-- Add tests with behavior changes. Realistic tests (failed calls, retries,
-  nested tools, interrupted runs) are valued over mocks.
-- **Never** weaken redaction defaults or log redacted values. Security changes
-  must include tests proving secrets stay out of storage.
-- Keep dependencies lean; justify new ones.
-- Conventional-ish commit messages (`feat:`, `fix:`, `docs:`, …) are appreciated.
+- Add tests when you change behavior. I value realistic tests (failed calls,
+  retries, nested tools, interrupted runs) over mocks.
+- Never weaken the redaction defaults or log redacted values. Any security change
+  has to come with tests proving secrets stay out of storage.
+- Keep dependencies lean, and justify a new one when you add it.
+- Conventional-ish commit messages (`feat:`, `fix:`, `docs:`, and so on) are
+  appreciated.
 
 ## Code of conduct
 
-Be respectful and constructive.
+Be respectful and constructive. That is the whole policy.

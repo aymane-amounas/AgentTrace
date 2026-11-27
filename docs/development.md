@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- Rust (stable, 1.85+ - a transitive dependency uses edition 2024)
-- Node 20+ (22 used in CI)
-- Docker (optional, for the container build)
+- Rust (stable, 1.85+, because a transitive dependency uses edition 2024)
+- Node 20+ (CI uses 22)
+- Docker, optional, for the container build
 
 ## Workspace layout
 
@@ -36,8 +36,9 @@ cargo run --release -p agenttrace-collector &   # :4357
 cargo run -p sample-agent                        # produces traces
 ```
 
-During viewer development, run the collector (`:4357`) and `npm run dev`
-(`:5173`); Vite proxies `/v1` and `/healthz` to the collector.
+When you are working on the viewer, run the collector on `:4357` and
+`npm run dev` on `:5173`. Vite proxies `/v1` and `/healthz` through to the
+collector, so the UI talks to real data.
 
 ## Using the SDK in your own agent
 
@@ -63,11 +64,13 @@ run.end();          // also happens on drop
 tracer.shutdown();  // flush the HTTP exporter before exit
 ```
 
-Features: `http` (HTTP exporter), `tracing-layer` (bridge the `tracing` crate).
+The two features are `http` (the HTTP exporter) and `tracing-layer` (the bridge to
+the `tracing` crate).
 
 ## Testing philosophy
 
-Tests cover real behavior, not mocks: id round-trips, concurrency isolation,
-redaction (including an untrusted-client secret-leak test through the HTTP API),
-storage filtering, and a full ingest → query → inspect → export integration
-test. See `cargo test --workspace --all-features`.
+The tests go after real behavior rather than mocks: id round-trips, concurrency
+isolation, redaction (including a test that POSTs a secret as an untrusted client
+through the HTTP API and checks it never lands in storage), storage filtering, and
+a full ingest → query → inspect → export integration test. Run them all with
+`cargo test --workspace --all-features`.

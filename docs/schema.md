@@ -1,8 +1,8 @@
 # Trace schema (v0.1.0)
 
-A **span** is one unit of work in an agent run. Spans form a tree via
-`parent_span_id`; all spans in one run share a `trace_id`. The schema is
-versioned by `schema_version` and bumped on any breaking change.
+A span is one unit of work in an agent run. Spans form a tree through
+`parent_span_id`, and every span in one run shares a `trace_id`. The schema is
+versioned by `schema_version`, which I bump on any breaking change.
 
 ## Span types (`span_type`)
 
@@ -40,20 +40,22 @@ versioned by `schema_version` and bumped on any breaking change.
 | `attributes`             | map<string,any> | no       | **policy**| free-form; redacted |
 | `events`                 | array           | no       | **policy**| point-in-time events |
 
-`duration_ms` is derived (`end - start`) and computed by consumers; it is also
-materialized as a column in the collector for querying.
+`duration_ms` is derived (`end - start`). Consumers compute it, and the collector
+also materializes it as a column so it can be queried.
 
 ### Sensitivity
 
-- **Never stored:** authorization headers, API keys, tokens, passwords - any
-  attribute whose key matches the sensitive-key list, and any value matching a
-  secret pattern (bearer/`sk-`/AWS/GCP/GitHub/Slack/JWT), are masked to
-  `[REDACTED]`.
-- **Off by default:** raw payload keys (`prompt`, `messages`, `input`, `output`,
-  `arguments`, `content`, …) are dropped to `[omitted: payload capture disabled]`
-  unless payload capture is explicitly enabled.
+Some fields never get stored in the clear. Authorization headers, API keys, tokens
+and passwords (any attribute whose key matches the sensitive-key list, and any
+value matching a secret pattern: bearer, `sk-`, AWS, GCP, GitHub, Slack, JWT) are
+masked to `[REDACTED]`.
 
-See [`privacy.md`](privacy.md).
+Others are off by default. The raw payload keys (`prompt`, `messages`, `input`,
+`output`, `arguments`, `content`, and so on) are dropped to
+`[omitted: payload capture disabled]` unless payload capture is explicitly turned
+on.
+
+See [`privacy.md`](privacy.md) for the full model.
 
 ## JSON example
 
@@ -78,7 +80,7 @@ See [`privacy.md`](privacy.md).
 ## OTLP mapping
 
 `GET /v1/traces/:id/export?format=otlp` returns an OTLP/JSON
-`ExportTraceServiceRequest`. Agent concepts map to attributes:
+`ExportTraceServiceRequest`. The agent concepts map onto attributes like this:
 
 | AgentTrace field | OTLP attribute |
 | ---------------- | -------------- |
@@ -93,4 +95,4 @@ See [`privacy.md`](privacy.md).
 | `error_type`     | `exception.type` |
 | `status`         | OTLP status code (`unset`/`ok`/`error` → 0/1/2) |
 
-Full OTLP *ingestion* is a roadmap item; export is implemented today.
+Full OTLP ingestion is still a roadmap item. Only export is implemented today.

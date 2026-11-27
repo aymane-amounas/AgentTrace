@@ -5,48 +5,55 @@
 <h1 align="center">AgentTrace</h1>
 
 <p align="center">
-  <strong>See everything your AI agent does. Understand why it does it. Find out where it fails.</strong>
+  When an AI agent run goes wrong, AgentTrace shows you what it did and where it broke.
 </p>
 
-AgentTrace is an OpenTelemetry-inspired observability platform built specifically
-for AI agents. When an agent fails, you shouldn't have to grep scattered logs to
-reconstruct what happened - AgentTrace records structured spans for every run,
-model call, tool call, approval, retry and error, and lets you replay the whole
-execution and find the exact span that broke.
+I built AgentTrace because debugging an agent run meant grepping through scattered
+logs and guessing at the order things happened in. It records a structured span
+for every run, model call, tool call, approval, retry and error, then lets me
+replay the whole execution and jump to the span that actually failed. It takes
+after OpenTelemetry in shape, but it is aimed squarely at AI agents rather than
+general request tracing.
 
 ![AgentTrace overview](docs/assets/overview.jpg)
 
 ---
 
-## Why
+## Why I built it
 
-Agent runs are hard to debug: prompts, model calls, tool calls, retries, latency,
-token usage and failures end up spread across logs. AgentTrace gives them one
-structured, queryable shape - a trace tree with timing, status, token/cost
-metadata, and tool arguments redacted by policy - and a local-first viewer to
-explore it.
+An agent run spreads itself across logs: the prompt here, the model call there,
+tool calls, retries, latency, token usage, the failure somewhere in the middle.
+Reconstructing that by hand is slow and error-prone. AgentTrace gives a run one
+structured, queryable shape, a trace tree with timing, status, token and cost
+metadata, and tool arguments redacted by policy, plus a local viewer to walk
+through it.
 
-It is **local-first and private by default**: the collector binds to loopback,
-and secrets are redacted *before* they are ever written to disk.
+It runs local-first and private by default. The collector binds to loopback, and
+secrets are redacted before they are ever written to disk, not just hidden in the
+UI.
 
 ## How it compares
 
-The agent-observability space is crowded (Langfuse, Arize Phoenix, Helicone,
-OpenLLMetry and others), and several of them can self-host too. AgentTrace is a
-deliberately narrow, opinionated take rather than a general LLM-tracing platform:
+The agent-observability space is crowded. Langfuse, Arize Phoenix, Helicone and
+OpenLLMetry are all here, and several of them self-host too. So AgentTrace is not
+trying to be a general LLM-tracing platform. It is a narrower, more opinionated
+take, and the differences are deliberate.
 
-- **Shaped like an agent run, not a request log.** Approvals, retries and tool
-  calls are first-class span types, so a failed run reads as a tree you follow -
-  not flat spans you reassemble.
-- **Redaction before persistence.** Secrets are stripped at the SDK *and* the
-  collector before anything is written, not filtered at display time.
-- **One binary, no account, loopback by default.** `docker compose up` (or a
-  single collector binary) plus a static viewer. Nothing leaves your machine
-  unless you opt in.
+The data is shaped like an agent run, not a request log. Approvals, retries and
+tool calls are first-class span types, so a failed run reads as a tree you follow
+down rather than flat spans you have to reassemble.
+
+Redaction happens before anything is persisted. Secrets are stripped at the SDK
+and again at the collector before a write, not filtered out at display time.
+
+And it is one binary with no account and loopback by default. You run
+`docker compose up` (or a single collector binary) plus a static viewer, and
+nothing leaves your machine unless you opt in.
 
 If you need multi-tenant dashboards and a managed service, a hosted tool will be
-more mature. AgentTrace is for the developer who wants their agent's full
-execution locally, with no project to create and no keys to hand over.
+more mature than this. AgentTrace is for the developer who just wants their
+agent's full execution locally, with no project to create and no keys to hand
+over.
 
 ## Features
 
@@ -76,7 +83,7 @@ AI agent (SDK)  ──spans──▶  Collector (axum + SQLite)  ──JSON─�
 - **Viewer** (`viewer/`) - React + Vite trace UI.
 - **Sample agent** (`crates/sample-agent`) - fully instrumented demo.
 
-See [`docs/architecture.md`](docs/architecture.md).
+There is more detail in [`docs/architecture.md`](docs/architecture.md).
 
 ## Quick start
 
@@ -124,7 +131,8 @@ tracer.shutdown();  // flush before a short-lived process exits
 
 ## Example trace
 
-The sample agent produces this failure, fully inspectable in the viewer:
+The sample agent produces this failure, which you can inspect span by span in the
+viewer:
 
 ```
 research.agent                      error   228ms
@@ -139,25 +147,26 @@ research.agent                      error   228ms
 
 ## Using the viewer
 
-The collector serves the viewer at **http://127.0.0.1:4357/** - it hosts the built static bundle, so no separate dev server is needed.
+The collector serves the viewer at **http://127.0.0.1:4357/**. It hosts the built
+static bundle, so you do not need to run a separate dev server.
 
 - **Overview** - totals at a glance: traces, spans, failed traces, model/tool calls, tokens, estimated cost, average duration, and the most recent runs.
 - **Traces** - every run as a row (status, operation, spans, tokens, cost, duration), filterable by status, type, provider, model, text, duration and time.
 - **Trace detail** - the execution waterfall: a parent/child span tree with per-span timing bars, color-coded by type (run, model, tool, approval, retry). Failed spans are highlighted, and selecting a span opens its full detail (model, tokens, cost, tool arguments, error). **Replay** steps through the recorded run and never re-executes your agent.
 - **Export** - download any trace as native JSON or OTLP from the detail view.
 
-## Security & privacy
+## Security and privacy
 
-- Collector binds to **loopback only**; no public exposure by default.
-- API keys, tokens, passwords and auth headers are **redacted before
-  persistence**, at both the SDK and the collector.
-- Raw prompts and tool arguments are **not stored unless you opt in**.
-- Storage **fails closed**: if a secret shape survives redaction, the span is
-  dropped, not written raw.
+- The collector binds to loopback only, so there is no public exposure by default.
+- API keys, tokens, passwords and auth headers are redacted before persistence, at
+  both the SDK and the collector.
+- Raw prompts and tool arguments are not stored unless you opt in.
+- Storage fails closed: if a secret shape survives redaction, the span is dropped
+  rather than written raw.
 - CORS is scoped to local origins; responses carry `nosniff`, frame-deny and a
-  tight CSP; internal errors are not echoed to clients.
+  tight CSP; internal errors are not echoed back to clients.
 
-Details and limitations: [`docs/privacy.md`](docs/privacy.md) ·
+The full model and its limits are in [`docs/privacy.md`](docs/privacy.md) and
 [`SECURITY.md`](SECURITY.md).
 
 ## API
@@ -174,7 +183,9 @@ Details and limitations: [`docs/privacy.md`](docs/privacy.md) ·
 
 ## Configuration
 
-The collector reads `AGENTTRACE_*` environment variables and falls back to safe defaults. Binding to a non-loopback host is allowed but logged as unhardened.
+The collector reads `AGENTTRACE_*` environment variables and falls back to safe
+defaults. Binding to a non-loopback host is allowed, but it gets logged as
+unhardened so you notice.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -187,7 +198,7 @@ The collector reads `AGENTTRACE_*` environment variables and falls back to safe 
 | `AGENTTRACE_RETENTION_DAYS` | `30` | Spans older than this are pruned. |
 | `RUST_LOG` | - | Standard `tracing` filter, e.g. `agenttrace_collector=debug`. |
 
-The effective settings are readable at runtime via `GET /v1/config`.
+You can read the effective settings at runtime from `GET /v1/config`.
 
 ## Documentation
 
@@ -201,8 +212,8 @@ The effective settings are readable at runtime via `GET /v1/config`.
 
 ## OpenTelemetry compatibility
 
-AgentTrace is OpenTelemetry-*inspired*, not an OpenTelemetry implementation. Be
-precise about what that means:
+AgentTrace is OpenTelemetry-inspired, not an OpenTelemetry implementation, and I
+want to be precise about what that means rather than wave the OTel logo around.
 
 | Aspect | Status | Detail |
 | --- | --- | --- |
@@ -216,16 +227,20 @@ precise about what that means:
 | OTLP/gRPC and protobuf | Not supported | Export is JSON only |
 | Metrics / logs signals | Not supported | Traces only |
 
-In short: the data model and ids line up with OpenTelemetry well enough to export
-a trace into an OTLP/JSON backend, but AgentTrace is not a drop-in OTel SDK or
-collector and does not join an existing distributed trace.
+So the data model and ids line up with OpenTelemetry well enough to export a trace
+into an OTLP/JSON backend, but AgentTrace is not a drop-in OTel SDK or collector
+and it will not join an existing distributed trace.
 
 ## Performance
 
-Measured locally on a single machine with the release build and SQLite (WAL),
-loopback HTTP, using the sample agent's span shapes. These are not a benchmark
-suite; reproduce with `scripts/bench.sh`. Your numbers will vary with hardware
-and payload size.
+I measured these locally on a single machine, release build, SQLite in WAL mode,
+loopback HTTP, using the sample agent's span shapes. This is not a proper
+benchmark suite, so treat it as a rough probe. You can reproduce it with
+`scripts/bench.sh`, and your numbers will move with hardware and payload size.
+
+The table below is still blank on purpose. I have not run the probe enough to put
+numbers I trust here, and I would rather leave it empty than publish made-up
+figures.
 
 | Metric | Value | Method |
 | --- | --- | --- |
@@ -236,21 +251,26 @@ and payload size.
 | Trace detail query | _to be filled_ | `GET /v1/traces/:id` p50 |
 
 Retention is time-based: spans older than `AGENTTRACE_RETENTION_DAYS` (default 30)
-are pruned on startup and hourly thereafter.
+are pruned on startup and then hourly.
 
-## Current limitations
+## What it does not do yet
 
-- **Single-node, SQLite-backed.** Built for local, single-developer use, not a multi-tenant hosted service.
-- **OTLP is export-only.** Spans are ingested in the native format; full OTLP *ingestion* is on the roadmap.
-- **No authentication.** The collector assumes a loopback, single-user environment; there is no auth for a remote mode yet.
-- **Redaction is key/value masking**, not free-text content inspection - it catches known secret shapes and common secret keys, and raw payload capture stays off by default.
+- It is single-node and SQLite-backed. I built it for local, single-developer use,
+  not for a multi-tenant hosted service.
+- OTLP is export-only. Spans come in through the native format; full OTLP
+  ingestion is still on the roadmap.
+- There is no authentication. The collector assumes a loopback, single-user
+  setup, and there is no auth for a remote mode yet.
+- Redaction is key/value masking, not free-text content inspection. It catches
+  known secret shapes and common secret keys, and raw payload capture stays off by
+  default.
 
 ## Roadmap
 
-- Full OTLP *ingestion* (export is implemented today).
-- Additional storage backends behind the existing storage interface.
-- Richer dashboard aggregates (per-model cost/latency trends).
-- Optional authenticated remote mode.
+- Full OTLP ingestion (export already works today).
+- More storage backends behind the existing storage interface.
+- Richer dashboard aggregates, like per-model cost and latency trends.
+- An optional authenticated remote mode.
 
 ## Tech stack
 
